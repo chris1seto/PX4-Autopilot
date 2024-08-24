@@ -204,6 +204,16 @@ then
 	spl06 -X -a 0x77 start
 fi
 
+# RADICAL_CANBUS
+param touch RADICAL_CANBUS_ENABLE
+param touch RADICAL_CANBUS_BITRATE
+param touch RADICAL_CANBUS_CAN_IDX
+
+if param greater RADICAL_CANBUS_ENABLE 0
+then
+  radical_canbus start
+fi
+
 # PCF8583 counter (RPM sensor)
 if param compare -s SENS_EN_PCF8583 1
 then
