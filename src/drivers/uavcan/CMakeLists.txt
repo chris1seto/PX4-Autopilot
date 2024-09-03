@@ -198,17 +198,18 @@ px4_add_module(
 		uavcan
 	)
 
-px4_add_module(
-		MODULE drivers__radical_canbus
-		MAIN radical_canbus
-		STACK_MAIN 4096
-		INCLUDES
-			radical_canbus/include
-			${LIBUAVCAN_DIR_DRIVERS}/${UAVCAN_DRIVER}/driver/include
-		SRCS
-			radical_canbus/src/radical_canbus.cpp
-		DEPENDS
-			uavcan_${UAVCAN_DRIVER}_driver
-			uavcan
-
-	)
+#px4_add_module(
+#		MODULE drivers__radical_canbus
+#		MAIN radical_canbus
+#		STACK_MAIN 4096
+#		INCLUDES
+#			radical_canbus/include
+#			${LIBUAVCAN_DIR_DRIVERS}/${UAVCAN_DRIVER}/driver/include
+#		SRCS
+#			radical_canbus/src/radical_canbus.cpp
+#		DEPENDS
+#			uavcan_${UAVCAN_DRIVER}_driver
+#			uavcan
+#
+#	)
+#

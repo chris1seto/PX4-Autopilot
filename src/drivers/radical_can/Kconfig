@@ -1,0 +1,5 @@
+menuconfig DRIVERS_RADICAL_CAN
+	bool "radical_can"
+	default y
+	---help---
+		Enable support for radical_can
