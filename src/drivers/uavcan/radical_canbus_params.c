@@ -2,35 +2,34 @@
 
 /**
  *
- *  0 - RADICAL_CANBUS disabled.
- *  1 - RADICAL_CANBUS enabled.
+ * Radical canbus enabled
  *
  * @min 0
  * @max 1
  * @value 0 Disabled
  * @value 1 Enabled
  * @reboot_required true
- * @group RADICAL_CANBUS
+ * @group RAD_CAN
  */
-PARAM_DEFINE_INT32(RADICAL_CANBUS_ENABLE, 1);
+PARAM_DEFINE_INT32(RAD_CAN_ENABLE, 1);
 
 /**
- * RADICAL_CANBUS CAN bus bitrate.
+ * Radical canbus bitrate
  *
  * @unit bit/s
  * @min 20000
  * @max 1000000
  * @reboot_required true
- * @group RADICAL_CANBUS
+ * @group RAD_CAN
  */
-PARAM_DEFINE_INT32(RADICAL_CANBUS_BITRATE, 1000000);
+PARAM_DEFINE_INT32(RAD_CAN_BITRATE, 1000000);
 
 /**
- * RADICAL_CANBUS CAN interface selection.
+ * Radical canbus CAN interface selection.
  *
  * @min 0
  * @max 1
  * @reboot_required true
- * @group RADICAL_CANBUS
+ * @group RAD_CAN
  */
-PARAM_DEFINE_INT32(RADICAL_CANBUS_CAN_IDX, 0);
+PARAM_DEFINE_INT32(RAD_CAN_BUS_IDX, 1);

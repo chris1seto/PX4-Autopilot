@@ -26,17 +26,20 @@ bool RadicalCanbus::init()
 
 void RadicalCanbus::Run()
 {
-	if (should_exit()) {
+	if (should_exit())
+  {
 		ScheduleClear();
 		exit_and_cleanup();
 		return;
 	}
 
-	if (!_is_initialized) {
+	if (!_is_initialized)
+  {
 		_is_initialized = true;
 
 		int32_t iface_index;
-		param_get(param_find("RADICAL_CANBUS_CAN_IDX"), &iface_index);
+		param_get(param_find("RAD_CAN_IDX"), &iface_index);
+    PX4_INFO("Init on CAN indx %i", (int)iface_index);
 
 		device::Device::DeviceId device_id;
 		device_id.devid_s.bus_type = device::Device::DeviceBusType_UNKNOWN;
@@ -45,10 +48,12 @@ void RadicalCanbus::Run()
 		canInitHelper_ = new UAVCAN_DRIVER::CanInitHelper<kRxQueueCapacity>(1 << iface_index);
 
 		int32_t bitrate;
-		param_get(param_find("RADICAL_CANBUS_BITRATE"), &bitrate);
-		int ret = canInitHelper_->init((uint32_t) bitrate, false);
+		param_get(param_find("RAD_CAN_BITRATE"), &bitrate);
 
-		if (ret < 0) {
+    int ret = canInitHelper_->init((uint32_t) bitrate);
+
+		if (ret < 0)
+    {
 			PX4_ERR("CAN driver init failed with code %i", ret);
 			return;
 		}
@@ -59,11 +64,13 @@ void RadicalCanbus::Run()
 	}
 
 	uavcan::CanFrame received_frame{};
-
-	while (receive(&received_frame) > 0)
+  
+  
+  //receive(&received_frame);
+	/*while ( > 0)
   {
     // received_frame.id
-	}
+	}*/
 }
 
 int16_t RadicalCanbus::receive(uavcan::CanFrame *received_frame)
@@ -111,7 +118,6 @@ int RadicalCanbus::custom_command(int argc, char *argv[])
 int RadicalCanbus::print_usage(const char *reason)
 {
 	PX4_INFO("Radical Canbus [start | stop | status]");
-	PX4_INFO("Note: Module may be started in rc.sensors automatically according to RADICAL_CANBUS_ENABLE");
 
 	return 0;
 }

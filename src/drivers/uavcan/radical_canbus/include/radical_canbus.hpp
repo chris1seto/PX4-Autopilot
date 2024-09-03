@@ -7,9 +7,10 @@
 #include <px4_platform_common/posix.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
 #include <uORB/SubscriptionInterval.hpp>
-
+#include <uORB/PublicationMulti.hpp>
 #include <uORB/Subscription.hpp>
 #include <uORB/topics/parameter_update.h>
+#include <uORB/topics/battery_status.h>
 
 #include "../../uavcan_driver.hpp"
 
@@ -61,4 +62,13 @@ private:
 	 * @return 1 on CanFrame read, 0 on no frame read
 	 */
 	int16_t receive(uavcan::CanFrame *received_frame);
+  
+  uORB::PublicationMulti<battery_status_s> _battery_status_pub{ORB_ID(battery_status)};
+  //uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
+  
+	/*DEFINE_PARAMETERS(
+		(ParamBool<px4::params::RAD_CAN_ENABLE>) _param_rad_can_enable,
+    (ParamBool<px4::params::RAD_CAN_BITRATE>) _param_rad_can_bitrate,
+    (ParamBool<px4::params::RAD_CAN_BUS_IDX>) _param_rad_can_bus_idx
+	)*/
 };
