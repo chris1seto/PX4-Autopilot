@@ -1,12 +1,23 @@
 #pragma once
 
-#include <nuttx/can/can.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <unistd.h>
 
+#include <sys/time.h>
+#include <sys/socket.h>
+
+#include <net/if.h>
+
+#include <nuttx/can.h>
+#include <nuttx/can/can.h>
+#include <netpacket/can.h>
+
+#include <uORB/Publication.hpp>
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
 
-#include <uORB/Publication.hpp>
-#include <uORB/topics/battery_status.h>
+//#include "SensataBms.hpp"
 
 using namespace time_literals;
 
@@ -25,10 +36,18 @@ public:
 	int start();
 
 private:
+  int _fd{-1};
+  struct iovec       _recv_iov {};
+	struct canfd_frame _recv_frame {};
+	struct msghdr      _recv_msg {};
+  uint8_t            _recv_control[sizeof(struct cmsghdr) + sizeof(struct timeval)] {};
+  struct cmsghdr     *_recv_cmsg {};
 
 	void Run() override;
 
 	bool _initialized{false};
+  
+  bool RxFrame(struct canfd_frame &frame);
 
-	uORB::Publication<battery_status_s> _battery_status_pub{ORB_ID::battery_status};
+  //SensataBms _bms;
 };

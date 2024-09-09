@@ -22,6 +22,50 @@ void RadicalCan::Run()
 
 	if (!_initialized)
   {
+    const char *const can_iface_name = "can1";
+
+    struct sockaddr_can addr;
+    struct ifreq ifr;
+
+    // open socket
+    if ((_fd = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
+    {
+      PX4_ERR("socket");
+      return;
+    }
+    
+    strncpy(ifr.ifr_name, can_iface_name, IFNAMSIZ - 1);
+    ifr.ifr_name[IFNAMSIZ - 1] = '\0';
+    ifr.ifr_ifindex = if_nametoindex(ifr.ifr_name);
+
+    if (!ifr.ifr_ifindex)
+    {
+      PX4_ERR("if_nametoindex");
+      return;
+    }
+
+    memset(&addr, 0, sizeof(addr));
+    addr.can_family = AF_CAN;
+    addr.can_ifindex = ifr.ifr_ifindex;
+
+    if (bind(_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
+      PX4_ERR("bind");
+      return;
+    }
+    
+    // Setup RX msg
+    _recv_iov.iov_base = &_recv_frame;
+    _recv_iov.iov_len = sizeof(struct can_frame);
+
+    memset(_recv_control, 0x00, sizeof(_recv_control));
+
+    _recv_msg.msg_iov = &_recv_iov;
+    _recv_msg.msg_iovlen = 1;
+    _recv_msg.msg_control = &_recv_control;
+    _recv_msg.msg_controllen = sizeof(_recv_control);
+    _recv_cmsg = CMSG_FIRSTHDR(&_recv_msg);
+  
 		_initialized = true;
 	}
 
@@ -39,8 +83,8 @@ void RadicalCan::Run()
 		battery_status.voltage_v = static_cast<float>(tattu_message.voltage) / 1000.0f;
 		battery_status.current_a = static_cast<float>(tattu_message.current) / 1000.0f;
 		battery_status.remaining = static_cast<float>(tattu_message.remaining_percent) / 100.0f;
-		battery_status.temperature = static_cast<float>(tattu_message.temperature);
-		battery_status.capacity = tattu_message.standard_capacity;
+		battery_status.temperature = static_cast<float>(0);
+		battery_status.capacity = 0;
 		battery_status.voltage_cell_v[0] = 0;
 		battery_status.voltage_cell_v[1] = 0;
 		battery_status.voltage_cell_v[2] = 0;
@@ -55,6 +99,11 @@ void RadicalCan::Run()
 		battery_status.voltage_cell_v[11] = 0;
 
 		_battery_status_pub.publish(battery_status);*/
+}
+
+bool RadicalCan::RxFrame(struct canfd_frame &frame)
+{
+  return true;
 }
 
 
