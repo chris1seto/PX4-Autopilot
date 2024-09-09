@@ -1,6 +1,8 @@
-//#include "SensataBms.hpp"
+#include "SensataBms.hpp"
 
+static uint32_t Unpack32Le(const uint8_t** data);
 static uint16_t Unpack16Le(const uint8_t** data);
+static uint8_t Unpack8(const uint8_t** data);
 static uint64_t TimeNow(void);
 
 static uint64_t TimeNow(void)
@@ -10,6 +12,20 @@ static uint64_t TimeNow(void)
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 
 	return ts.tv_sec * 1000000ULL + ts.tv_nsec / 1000ULL;
+}
+
+static uint32_t Unpack32Le(const uint8_t** data)
+{
+  uint32_t word = 0;
+  word |= **data;
+  (*data)++;
+  word |= **data << 8;
+  (*data)++;
+  word |= **data << 16;
+  (*data)++;
+  word |= **data << 24;
+  (*data)++;
+  return word;
 }
 
 static uint16_t Unpack16Le(const uint8_t** data)
@@ -38,20 +54,20 @@ SensataBms::~SensataBms()
 {
 }
 
-bool SensataBms::ProcessFrame(struct canfd_frame* frame)
+bool SensataBms::ProcessFrame(struct canfd_frame& frame)
 {
   uint32_t frame_type;
   uint32_t pack_index;
   BmsPackData* pack_instance;
 
-  if (frame->can_id < BMS_FRAME_ID_BASE
-    || frame->can_id > BMS_FRAME_ID_BASE + (BMS_FRAME_ID_SPACING * BMS_FRAME_COUNT))
+  if (frame.can_id < BMS_FRAME_ID_BASE
+    || frame.can_id > BMS_FRAME_ID_BASE + (BMS_FRAME_ID_SPACING * BMS_FRAME_COUNT))
   {
     return false;
   }
 
-  pack_index = (frame->can_id - BMS_FRAME_ID_BASE) % BMS_FRAME_ID_SPACING;
-  frame_type = (frame->can_id - BMS_FRAME_ID_BASE - pack_index) / BMS_FRAME_ID_SPACING;
+  pack_index = (frame.can_id - BMS_FRAME_ID_BASE) % BMS_FRAME_ID_SPACING;
+  frame_type = (frame.can_id - BMS_FRAME_ID_BASE - pack_index) / BMS_FRAME_ID_SPACING;
 
   if (pack_index > PARALLEL_PACK_COUNT)
   {
@@ -66,7 +82,7 @@ bool SensataBms::ProcessFrame(struct canfd_frame* frame)
       break;
 
     case 6:
-      this->ParseFrame6(pack_instance, frame->data, frame->can_dlc);
+      this->UnpackFrame6(pack_instance, frame.data, frame.len);
       break;
   }
 
@@ -83,7 +99,7 @@ void SensataBms::UnpackFrame6(BmsPackData* const pack_instance, const uint8_t* d
       11 PACK_V_SUM_OF_CELLS UINT16 0,1 V Sum of all cells
       19 SOC_TRIMMED UINT16 0,01 % Trimmed SoC
   */
-  uint8_t* parse_ptr = data;
+  const uint8_t* parse_ptr = data;
 
   if (pack_instance == NULL)
   {
@@ -95,6 +111,7 @@ void SensataBms::UnpackFrame6(BmsPackData* const pack_instance, const uint8_t* d
     return;
   }
 
+  pack_instance->heard_frame_bits |= FRAME_6;
   pack_instance->min_cell_voltage_v = Unpack16Le(&parse_ptr) * 0.001f;
   pack_instance->max_cell_voltage_v = Unpack16Le(&parse_ptr) * 0.001f;
   pack_instance->voltage_v = Unpack16Le(&parse_ptr) * 0.1f;
@@ -108,7 +125,7 @@ void SensataBms::UnpackFrame7(BmsPackData* const pack_instance, const uint8_t* d
       1081 SOH UINT16 0,01 % SoH
   */
 
-  uint8_t* parse_ptr = data;
+  const uint8_t* parse_ptr = data;
 
   if (pack_instance == NULL)
   {
@@ -119,6 +136,8 @@ void SensataBms::UnpackFrame7(BmsPackData* const pack_instance, const uint8_t* d
   {
     return;
   }
+
+  pack_instance->soh_pct = Unpack16Le(&parse_ptr) * 0.01f;
 }
 
 void SensataBms::UnpackFrame8(BmsPackData* const pack_instance, const uint8_t* data, const uint32_t dlc)
@@ -129,7 +148,7 @@ void SensataBms::UnpackFrame8(BmsPackData* const pack_instance, const uint8_t* d
       16 PACK_I_MASTER INT32 0,01 mA Selected current source (shunt or hall) will be the system reference current.
   */
 
-  uint8_t* parse_ptr = data;
+  const uint8_t* parse_ptr = data;
 
   if (pack_instance == NULL)
   {
@@ -140,6 +159,9 @@ void SensataBms::UnpackFrame8(BmsPackData* const pack_instance, const uint8_t* d
   {
     return;
   }
+
+  pack_instance->resistance_r = Unpack32Le(&parse_ptr) * 0.01f;
+  pack_instance->current_a = Unpack32Le(&parse_ptr) * 0.0001f;
 }
 
 void SensataBms::UnpackFrame9(BmsPackData* const pack_instance, const uint8_t* data, const uint32_t dlc)
@@ -154,7 +176,8 @@ void SensataBms::UnpackFrame9(BmsPackData* const pack_instance, const uint8_t* d
       73 CMUS_CMU1_BALANCE_T 2 INT8 1 °C CMU balance circuit temperature. 121 = OC, -41 = SC
   */
 
-  uint8_t* parse_ptr = data;
+  uint32_t i;
+  const uint8_t* parse_ptr = data;
 
   if (pack_instance == NULL)
   {
@@ -164,6 +187,16 @@ void SensataBms::UnpackFrame9(BmsPackData* const pack_instance, const uint8_t* d
   if (dlc != 6)
   {
     return;
+  }
+
+  for (i = 0; i < PACK_TEMP_SENSOR_COUNT; i++)
+  {
+    pack_instance->pack_temp_sensors_c[i] = Unpack8(&parse_ptr);
+  }
+
+  for (i = 0; i < CMS_TEMP_SENSOR_COUNT; i++)
+  {
+    pack_instance->cms_temps_c[i] = Unpack8(&parse_ptr);
   }
 }
 
@@ -176,7 +209,7 @@ void SensataBms::UnpackFrame10(BmsPackData* const pack_instance, const uint8_t* 
       973 BALANCING_BALANCE_SE TTING_CMU1_CELL_BITM ASK UINT32 1 - Cells being balanced as bitmask (b0 = cell 0, ... b11 = cell 11, b12-b15 = always zero)
         24 bits
   */
-  uint8_t* parse_ptr = data;
+  //const uint8_t* parse_ptr = data;
 
   if (pack_instance == NULL)
   {
@@ -195,7 +228,7 @@ void SensataBms::UnpackFrame11(BmsPackData* const pack_instance, const uint8_t* 
     Items
 
   */
-  uint8_t* parse_ptr = data;
+  //const uint8_t* parse_ptr = data;
 
   if (pack_instance == NULL)
   {
@@ -210,4 +243,5 @@ void SensataBms::UnpackFrame11(BmsPackData* const pack_instance, const uint8_t* 
 
 void SensataBms::Update()
 {
+  last_frame_check_time = TimeNow();
 }

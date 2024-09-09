@@ -17,7 +17,7 @@
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
 
-//#include "SensataBms.hpp"
+#include "SensataBms.hpp"
 
 using namespace time_literals;
 
@@ -46,8 +46,8 @@ private:
 	void Run() override;
 
 	bool _initialized{false};
-  
+
   bool RxFrame(struct canfd_frame &frame);
 
-  //SensataBms _bms;
+  SensataBms _bms;
 };

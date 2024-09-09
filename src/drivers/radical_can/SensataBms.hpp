@@ -3,20 +3,49 @@
 #include <uORB/topics/battery_status.h>
 #include <uORB/Publication.hpp>
 
+#include <nuttx/can.h>
+
 class SensataBms
 {
 public:
   SensataBms();
   ~SensataBms();
 
+  bool ProcessFrame(struct canfd_frame& frame);
   void Update();
 
 private:
+
+  enum FrameBits : uint32_t {
+      FRAME_1  = 1 << 0,
+      FRAME_2  = 1 << 1,
+      FRAME_3  = 1 << 2,
+      FRAME_4  = 1 << 3,
+      FRAME_5  = 1 << 4,
+      FRAME_6  = 1 << 5,
+      FRAME_7  = 1 << 6,
+      FRAME_8  = 1 << 7,
+      FRAME_9  = 1 << 8,
+      FRAME_10 = 1 << 9,
+      FRAME_11 = 1 << 10,
+      FRAME_12 = 1 << 11,
+      FRAME_13 = 1 << 12,
+      FRAME_14 = 1 << 13,
+      FRAME_15 = 1 << 14,
+      FRAME_16 = 1 << 15,
+      FRAME_17 = 1 << 16,
+      FRAME_18 = 1 << 17,
+      FRAME_19 = 1 << 18,
+      FRAME_20 = 1 << 19
+  };
+
+  static constexpr uint32_t PACK_TEMP_SENSOR_COUNT = 6;
+  static constexpr uint32_t CMS_TEMP_SENSOR_COUNT = 2;
+
   struct BmsPackData
   {
     // Meta
-    uint64_t last_heard_time;
-    bool timed_out;
+    uint32_t heard_frame_bits;
 
     // Frame 6
     float min_cell_voltage_v;
@@ -32,8 +61,8 @@ private:
     float current_a;
 
     // Frame 9
-    float temp_sensors_c[6];
-    float cms_temps_c[2];
+    float pack_temp_sensors_c[PACK_TEMP_SENSOR_COUNT];
+    float cms_temps_c[CMS_TEMP_SENSOR_COUNT];
 
     // Frame 10
     bool heater_on;
@@ -58,5 +87,7 @@ private:
   static constexpr uint32_t BMS_FRAME_COUNT = 20;
   static constexpr uint32_t PARALLEL_PACK_COUNT = 6;
 
-  BmsPackData pack_data[PARALLEL_PACK_COUNT];
+  uint64_t last_frame_check_time;
+
+  BmsPackData packs_data[PARALLEL_PACK_COUNT];
 };

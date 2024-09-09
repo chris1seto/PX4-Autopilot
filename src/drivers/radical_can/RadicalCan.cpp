@@ -106,7 +106,6 @@ bool RadicalCan::RxFrame(struct canfd_frame &frame)
   return true;
 }
 
-
 int RadicalCan::start()
 {
 	return PX4_OK;
@@ -118,7 +117,7 @@ int RadicalCan::task_spawn(int argc, char *argv[])
 
 	if (!instance)
   {
-		PX4_ERR("driver allocation failed");
+		PX4_ERR("!instance");
 		return PX4_ERROR;
 	}
 

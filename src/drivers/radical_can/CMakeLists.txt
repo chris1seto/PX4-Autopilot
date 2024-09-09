@@ -4,4 +4,5 @@ px4_add_module(
 	COMPILE_FLAGS
 	SRCS
 		RadicalCan.cpp
+    SensataBms.cpp
 	)
