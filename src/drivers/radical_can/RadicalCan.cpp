@@ -4,8 +4,14 @@
 extern orb_advert_t mavlink_log_pub;
 
 RadicalCan::RadicalCan() :
-	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::uavcan)
+	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::lp_default)
 {
+}
+
+int RadicalCan::start()
+{
+  ScheduleNow();
+	return PX4_OK;
 }
 
 RadicalCan::~RadicalCan()
@@ -16,12 +22,15 @@ void RadicalCan::Run()
 {
 	if (should_exit())
   {
+    PX4_WARN("Exit");
+    ScheduleClear();
 		exit_and_cleanup();
 		return;
 	}
 
 	if (!_initialized)
   {
+    PX4_INFO("Start");
     const char *const can_iface_name = "can1";
 
     struct sockaddr_can addr;
@@ -33,7 +42,7 @@ void RadicalCan::Run()
       PX4_ERR("socket");
       return;
     }
-    
+
     strncpy(ifr.ifr_name, can_iface_name, IFNAMSIZ - 1);
     ifr.ifr_name[IFNAMSIZ - 1] = '\0';
     ifr.ifr_ifindex = if_nametoindex(ifr.ifr_name);
@@ -53,7 +62,7 @@ void RadicalCan::Run()
       PX4_ERR("bind");
       return;
     }
-    
+
     // Setup RX msg
     _recv_iov.iov_base = &_recv_frame;
     _recv_iov.iov_len = sizeof(struct can_frame);
@@ -65,50 +74,27 @@ void RadicalCan::Run()
     _recv_msg.msg_control = &_recv_control;
     _recv_msg.msg_controllen = sizeof(_recv_control);
     _recv_cmsg = CMSG_FIRSTHDR(&_recv_msg);
-  
+
 		_initialized = true;
 	}
 
-		/*battery_status_s battery_status = {};
-		battery_status.timestamp = hrt_absolute_time();
-		battery_status.connected = true;
-		battery_status.cell_count = 12;
+  PX4_INFO("Running");
 
-		sprintf(battery_status.serial_number, "%d", tattu_message.manufacturer);
-		battery_status.id = static_cast<uint8_t>(tattu_message.sku);
+  while (recvmsg(_fd, &_recv_msg, MSG_DONTWAIT) >= 0)
+  {
+    PX4_INFO("%lu", (uint32_t)_recv_frame.can_id);
+    if (_bms.ProcessFrame(_recv_frame))
+    {
+      continue;
+    }
+  }
 
-		battery_status.cycle_count = tattu_message.cycle_life;
-		battery_status.state_of_health = static_cast<uint16_t>(tattu_message.health_status);
+  /*if (HrtHelper_IsDue(_last_bms_update_time, BMS_UPDATE_PERIOD_MS))
+  {
+    _bms.Update()
+  }*/
 
-		battery_status.voltage_v = static_cast<float>(tattu_message.voltage) / 1000.0f;
-		battery_status.current_a = static_cast<float>(tattu_message.current) / 1000.0f;
-		battery_status.remaining = static_cast<float>(tattu_message.remaining_percent) / 100.0f;
-		battery_status.temperature = static_cast<float>(0);
-		battery_status.capacity = 0;
-		battery_status.voltage_cell_v[0] = 0;
-		battery_status.voltage_cell_v[1] = 0;
-		battery_status.voltage_cell_v[2] = 0;
-		battery_status.voltage_cell_v[3] = 0;
-		battery_status.voltage_cell_v[4] = 0;
-		battery_status.voltage_cell_v[5] = 0;
-		battery_status.voltage_cell_v[6] = 0;
-		battery_status.voltage_cell_v[7] = 0;
-		battery_status.voltage_cell_v[8] = 0;
-		battery_status.voltage_cell_v[9] = 0;
-		battery_status.voltage_cell_v[10] = 0;
-		battery_status.voltage_cell_v[11] = 0;
-
-		_battery_status_pub.publish(battery_status);*/
-}
-
-bool RadicalCan::RxFrame(struct canfd_frame &frame)
-{
-  return true;
-}
-
-int RadicalCan::start()
-{
-	return PX4_OK;
+  ScheduleDelayed(100_ms);
 }
 
 int RadicalCan::task_spawn(int argc, char *argv[])
@@ -124,8 +110,9 @@ int RadicalCan::task_spawn(int argc, char *argv[])
 	_object.store(instance);
 	_task_id = task_id_is_work_queue;
 
-	instance->start();
-	return 0;
+	instance->ScheduleNow();
+
+	return PX4_OK;
 }
 
 int RadicalCan::print_usage(const char *reason)
@@ -142,7 +129,7 @@ int RadicalCan::print_usage(const char *reason)
 )DESCR_STR");
 
 	PRINT_MODULE_USAGE_NAME("radical_can", "system");
-	PRINT_MODULE_USAGE_COMMAND("start");
+  PRINT_MODULE_USAGE_COMMAND("start");
 	PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
 
 	return 0;

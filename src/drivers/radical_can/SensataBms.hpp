@@ -4,6 +4,13 @@
 #include <uORB/Publication.hpp>
 
 #include <nuttx/can.h>
+#include <nuttx/can/can.h>
+#include <netpacket/can.h>
+
+#include <drivers/drv_hrt.h>
+#include <px4_platform_common/module.h>
+
+#include "HrtHelper.hpp"
 
 class SensataBms
 {
@@ -11,36 +18,36 @@ public:
   SensataBms();
   ~SensataBms();
 
-  bool ProcessFrame(struct canfd_frame& frame);
+  bool ProcessFrame(struct can_frame& frame);
   void Update();
 
 private:
 
   enum FrameBits : uint32_t {
-      FRAME_1  = 1 << 0,
-      FRAME_2  = 1 << 1,
-      FRAME_3  = 1 << 2,
-      FRAME_4  = 1 << 3,
-      FRAME_5  = 1 << 4,
-      FRAME_6  = 1 << 5,
-      FRAME_7  = 1 << 6,
-      FRAME_8  = 1 << 7,
-      FRAME_9  = 1 << 8,
-      FRAME_10 = 1 << 9,
-      FRAME_11 = 1 << 10,
-      FRAME_12 = 1 << 11,
-      FRAME_13 = 1 << 12,
-      FRAME_14 = 1 << 13,
-      FRAME_15 = 1 << 14,
-      FRAME_16 = 1 << 15,
-      FRAME_17 = 1 << 16,
-      FRAME_18 = 1 << 17,
-      FRAME_19 = 1 << 18,
-      FRAME_20 = 1 << 19
+    FRAME_1  = 1 << 0,
+    FRAME_2  = 1 << 1,
+    FRAME_3  = 1 << 2,
+    FRAME_4  = 1 << 3,
+    FRAME_5  = 1 << 4,
+    FRAME_6  = 1 << 5,
+    FRAME_7  = 1 << 6,
+    FRAME_8  = 1 << 7,
+    FRAME_9  = 1 << 8,
+    FRAME_10 = 1 << 9,
+    FRAME_11 = 1 << 10,
+    FRAME_12 = 1 << 11,
+    FRAME_13 = 1 << 12,
+    FRAME_14 = 1 << 13,
+    FRAME_15 = 1 << 14,
+    FRAME_16 = 1 << 15,
+    FRAME_17 = 1 << 16,
+    FRAME_18 = 1 << 17,
+    FRAME_19 = 1 << 18,
+    FRAME_20 = 1 << 19
   };
 
-  static constexpr uint32_t PACK_TEMP_SENSOR_COUNT = 6;
-  static constexpr uint32_t CMS_TEMP_SENSOR_COUNT = 2;
+  static constexpr uint32_t PACK_TEMP_SENSOR_COUNT{6};
+  static constexpr uint32_t CMS_TEMP_SENSOR_COUNT{2};
 
   struct BmsPackData
   {
@@ -82,12 +89,22 @@ private:
 
   uORB::Publication<battery_status_s> _battery_status_pub{ORB_ID::battery_status};
 
-  static constexpr uint32_t BMS_FRAME_ID_BASE = 1010;
-  static constexpr uint32_t BMS_FRAME_ID_SPACING = 10;
-  static constexpr uint32_t BMS_FRAME_COUNT = 20;
-  static constexpr uint32_t PARALLEL_PACK_COUNT = 6;
+  static constexpr uint32_t BMS_FRAME_ID_BASE{1010};
+  static constexpr uint32_t BMS_FRAME_ID_SPACING{10};
+  static constexpr uint32_t BMS_FRAME_COUNT{20};
+  static constexpr uint32_t PARALLEL_PACK_COUNT{6};
+  static constexpr uint32_t CELL_COUNT{4};
 
-  uint64_t last_frame_check_time;
+  hrt_abstime last_frame_check_time{0};
 
-  BmsPackData packs_data[PARALLEL_PACK_COUNT];
+  static constexpr hrt_abstime FRAME_CHECK_PERIOD{500};
+
+  static constexpr hrt_abstime BATTERY_MONITOR_PUBLISH_PERIOD = 1000;
+   hrt_abstime last_battery_monitor_publish_time{0};
+
+  BmsPackData packs_data[PARALLEL_PACK_COUNT]{};
+
+  void PublishBatteryMonitor();
+
+  static constexpr uint32_t FRAMES_MASK{FRAME_6 | FRAME_7 | FRAME_8 | FRAME_9 | FRAME_10 | FRAME_11};
 };

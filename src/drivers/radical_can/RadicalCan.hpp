@@ -13,11 +13,15 @@
 #include <nuttx/can/can.h>
 #include <netpacket/can.h>
 
+#include <drivers/drv_hrt.h>
+
 #include <uORB/Publication.hpp>
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
 
 #include "SensataBms.hpp"
+
+#include "HrtHelper.hpp"
 
 using namespace time_literals;
 
@@ -33,12 +37,12 @@ public:
 
 	static int task_spawn(int argc, char *argv[]);
 
-	int start();
+  int start();
 
 private:
   int _fd{-1};
   struct iovec       _recv_iov {};
-	struct canfd_frame _recv_frame {};
+	struct can_frame _recv_frame {};
 	struct msghdr      _recv_msg {};
   uint8_t            _recv_control[sizeof(struct cmsghdr) + sizeof(struct timeval)] {};
   struct cmsghdr     *_recv_cmsg {};
@@ -47,7 +51,8 @@ private:
 
 	bool _initialized{false};
 
-  bool RxFrame(struct canfd_frame &frame);
-
-  SensataBms _bms;
+  SensataBms _bms{};
+  
+  static constexpr hrt_abstime BMS_UPDATE_PERIOD_MS{500_ms};
+  hrt_abstime _last_bms_update_time{0};
 };

@@ -5,4 +5,5 @@ px4_add_module(
 	SRCS
 		RadicalCan.cpp
     SensataBms.cpp
+    HrtHelper.cpp
 	)

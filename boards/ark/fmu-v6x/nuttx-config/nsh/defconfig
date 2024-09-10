@@ -329,6 +329,9 @@ CONFIG_USBDEV_MAXPOWER=500
 CONFIG_USEC_PER_TICK=1000
 CONFIG_WATCHDOG=y
 
+# See: PX4-Autopilot/platforms/nuttx/NuttX/nuttx/arch/arm/src/stm32h7/Kconfig
+# Values in that file are prefixed with CONFIG_ in this file
+# The default canbit seems to be 
 CONFIG_NETDEV_CAN_BITRATE_IOCTL=y
 CONFIG_NETDEV_IFINDEX=y
 CONFIG_NET_CAN=y
