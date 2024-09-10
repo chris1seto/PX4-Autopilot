@@ -50,14 +50,23 @@ bool SensataBms::ProcessFrame(struct can_frame& frame)
   uint32_t pack_index;
   BmsPackData* pack_instance;
 
-  if (frame.can_id < BMS_FRAME_ID_BASE
-    || frame.can_id > BMS_FRAME_ID_BASE + (BMS_FRAME_ID_SPACING * BMS_FRAME_COUNT))
+  if (frame.can_id & CAN_EFF_FLAG
+    || frame.can_id & CAN_RTR_FLAG
+    || frame.can_id & CAN_ERR_FLAG)
   {
     return false;
   }
 
-  pack_index = (frame.can_id - BMS_FRAME_ID_BASE) % BMS_FRAME_ID_SPACING;
-  frame_type = (frame.can_id - BMS_FRAME_ID_BASE - pack_index) / BMS_FRAME_ID_SPACING;
+  uint32_t can_id = frame.can_id;
+
+  if (can_id < BMS_FRAME_ID_BASE
+    || can_id > BMS_FRAME_ID_BASE + (BMS_FRAME_ID_SPACING * BMS_FRAME_COUNT))
+  {
+    return false;
+  }
+
+  pack_index = (can_id - BMS_FRAME_ID_BASE) % BMS_FRAME_ID_SPACING;
+  frame_type = (can_id - BMS_FRAME_ID_BASE - pack_index) / BMS_FRAME_ID_SPACING;
 
   if (pack_index > PARALLEL_PACK_COUNT)
   {

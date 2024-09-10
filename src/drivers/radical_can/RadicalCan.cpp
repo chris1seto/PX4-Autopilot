@@ -78,11 +78,9 @@ void RadicalCan::Run()
 		_initialized = true;
 	}
 
-  PX4_INFO("Running");
-
   while (recvmsg(_fd, &_recv_msg, MSG_DONTWAIT) >= 0)
   {
-    PX4_INFO("%lu", (uint32_t)_recv_frame.can_id);
+    PX4_INFO("%lx", (uint32_t)(_recv_frame.can_id & CAN_EFF_MASK));
     if (_bms.ProcessFrame(_recv_frame))
     {
       continue;
