@@ -46,47 +46,73 @@ SensataBms::~SensataBms()
 
 bool SensataBms::ProcessFrame(struct can_frame& frame)
 {
-  uint32_t frame_type;
+  uint32_t frame_index;
   uint32_t pack_index;
   BmsPackData* pack_instance;
+  bool frame_consumed = false;
 
-  if (frame.can_id & CAN_EFF_FLAG
-    || frame.can_id & CAN_RTR_FLAG
-    || frame.can_id & CAN_ERR_FLAG)
+  uint32_t frame_id = frame.can_id & CAN_EFF_MASK;
+
+  if (frame_id < BMS_FRAME_ID_BASE
+    || frame_id > BMS_FRAME_ID_BASE + (BMS_FRAME_ID_SPACING * BMS_FRAME_COUNT))
   {
     return false;
   }
 
-  uint32_t can_id = frame.can_id;
-
-  if (can_id < BMS_FRAME_ID_BASE
-    || can_id > BMS_FRAME_ID_BASE + (BMS_FRAME_ID_SPACING * BMS_FRAME_COUNT))
-  {
-    return false;
-  }
-
-  pack_index = (can_id - BMS_FRAME_ID_BASE) % BMS_FRAME_ID_SPACING;
-  frame_type = (can_id - BMS_FRAME_ID_BASE - pack_index) / BMS_FRAME_ID_SPACING;
+  /*
+    pack_index is 0..PARALLEL_PACK_COUNT
+    frame_index is 1 indexed, to keep consistency with the BMS user manual
+  */
+  pack_index = (frame_id - BMS_FRAME_ID_BASE) % BMS_FRAME_ID_SPACING;
+  frame_index = ((frame_id - BMS_FRAME_ID_BASE - pack_index) / BMS_FRAME_ID_SPACING) + 1;
 
   if (pack_index > PARALLEL_PACK_COUNT)
   {
     return false;
   }
 
-  pack_instance = &this->packs_data[pack_index];
+  pack_instance = &packs_data[pack_index];
 
-  switch (frame_type)
+  switch (frame_index)
   {
-    case 0:
+    case 1:
       break;
 
     case 6:
-      this->UnpackFrame6(pack_instance, frame.data, frame.can_dlc);
+      UnpackFrame6(pack_instance, frame.data, frame.can_dlc);
+      frame_consumed = true;
+      break;
+
+    case 7:
+      UnpackFrame7(pack_instance, frame.data, frame.can_dlc);
+      frame_consumed = true;
+      break;
+
+    case 8:
+      UnpackFrame8(pack_instance, frame.data, frame.can_dlc);
+      frame_consumed = true;
+      break;
+
+    case 9:
+      UnpackFrame9(pack_instance, frame.data, frame.can_dlc);
+      frame_consumed = true;
+      break;
+
+    case 10:
+      UnpackFrame10(pack_instance, frame.data, frame.can_dlc);
+      frame_consumed = true;
+      break;
+
+    case 11:
+      UnpackFrame11(pack_instance, frame.data, frame.can_dlc);
+      frame_consumed = true;
+      break;
+
+    default:
       break;
   }
 
-
-  return true;
+  return frame_consumed;
 }
 
 void SensataBms::UnpackFrame6(BmsPackData* const pack_instance, const uint8_t* data, const uint32_t dlc)
@@ -111,10 +137,16 @@ void SensataBms::UnpackFrame6(BmsPackData* const pack_instance, const uint8_t* d
   }
 
   pack_instance->heard_frame_bits |= FRAME_6;
-  pack_instance->min_cell_voltage_v = static_cast<float>(Unpack16Le(&parse_ptr)) * 0.001f;
-  pack_instance->max_cell_voltage_v = static_cast<float>(Unpack16Le(&parse_ptr)) * 0.001f;
+  pack_instance->min_cell_voltage_v = static_cast<float>(Unpack16Le(&parse_ptr)) * 0.0001f;
+  pack_instance->max_cell_voltage_v = static_cast<float>(Unpack16Le(&parse_ptr)) * 0.0001f;
   pack_instance->voltage_v = static_cast<float>(Unpack16Le(&parse_ptr)) * 0.1f;
   pack_instance->trimmed_soc_pct = static_cast<float>(Unpack16Le(&parse_ptr)) * 0.01f;
+
+  /*PX4_INFO("F6: min cell %f, max cell %f, voltage %f, soc %f",
+    (double)pack_instance->min_cell_voltage_v,
+    (double)pack_instance->min_cell_voltage_v,
+    (double)pack_instance->voltage_v,
+    (double)pack_instance->trimmed_soc_pct);*/
 }
 
 void SensataBms::UnpackFrame7(BmsPackData* const pack_instance, const uint8_t* data, const uint32_t dlc)
@@ -138,6 +170,8 @@ void SensataBms::UnpackFrame7(BmsPackData* const pack_instance, const uint8_t* d
 
   pack_instance->heard_frame_bits |= FRAME_7;
   pack_instance->soh_pct = static_cast<float>(Unpack16Le(&parse_ptr)) * 0.01f;
+
+  //PX4_INFO("F7 soh %f", (double)pack_instance->soh_pct);
 }
 
 void SensataBms::UnpackFrame8(BmsPackData* const pack_instance, const uint8_t* data, const uint32_t dlc)
@@ -163,6 +197,8 @@ void SensataBms::UnpackFrame8(BmsPackData* const pack_instance, const uint8_t* d
   pack_instance->heard_frame_bits |= FRAME_8;
   pack_instance->resistance_r = static_cast<float>(Unpack32Le(&parse_ptr)) * 0.01f;
   pack_instance->current_a = static_cast<float>(Unpack32Le(&parse_ptr)) * 0.0001f;
+
+  //PX4_INFO("F8 res %f, current_a %f", (double)pack_instance->resistance_r, (double)pack_instance->current_a);
 }
 
 void SensataBms::UnpackFrame9(BmsPackData* const pack_instance, const uint8_t* data, const uint32_t dlc)
@@ -201,6 +237,8 @@ void SensataBms::UnpackFrame9(BmsPackData* const pack_instance, const uint8_t* d
   {
     pack_instance->cms_temps_c[i] = static_cast<float>(Unpack8(&parse_ptr));
   }
+
+  //PX4_INFO("F9 temp %f, cms 1 %f, cms %f", (double)pack_instance->pack_temp_sensors_c[0], (double)pack_instance->cms_temps_c[0], (double)pack_instance->cms_temps_c[1]);
 }
 
 void SensataBms::UnpackFrame10(BmsPackData* const pack_instance, const uint8_t* data, const uint32_t dlc)
@@ -254,7 +292,8 @@ void SensataBms::PublishBatteryMonitor()
   float soc_accumulator_pct = 0;
   float soh_accumulator_pct = 0;
   float total_current_a = 0;
-  //float avg_soc_pct;
+  //float avg_soc_pct = 0;
+  uint32_t cycle_count_accumulator = 0;
   uint32_t i;
 
   for (i = 0; i < PARALLEL_PACK_COUNT; i++)
@@ -263,6 +302,7 @@ void SensataBms::PublishBatteryMonitor()
     total_current_a += packs_data[i].current_a;
     soc_accumulator_pct += packs_data[i].trimmed_soc_pct;
     soh_accumulator_pct += packs_data[i].soh_pct;
+    cycle_count_accumulator += packs_data[i].cycle_count;
   }
 
   battery_status_s battery_status = {};
@@ -271,7 +311,7 @@ void SensataBms::PublishBatteryMonitor()
   battery_status.cell_count = CELL_COUNT;
   battery_status.serial_number = 0;
   battery_status.id = 0;
-  battery_status.cycle_count = 0;
+  battery_status.cycle_count = cycle_count_accumulator / PARALLEL_PACK_COUNT;
   battery_status.state_of_health = soh_accumulator_pct / static_cast<float>(PARALLEL_PACK_COUNT);
   battery_status.voltage_v = voltage_accumulator_v / static_cast<float>(PARALLEL_PACK_COUNT);
   battery_status.current_a = total_current_a;
@@ -298,6 +338,8 @@ void SensataBms::PublishBatteryMonitor()
 void SensataBms::Update()
 {
   uint32_t i;
+
+  return;
 
   if (HrtHelper_IsDue(last_frame_check_time, FRAME_CHECK_PERIOD))
   {
