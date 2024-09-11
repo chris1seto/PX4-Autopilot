@@ -53,6 +53,6 @@ private:
 
   SensataBms _bms{};
   
-  static constexpr hrt_abstime BMS_UPDATE_PERIOD_MS{500_ms};
+  static constexpr hrt_abstime BMS_UPDATE_PERIOD{5000_ms};
   hrt_abstime _last_bms_update_time{0};
 };

@@ -12,6 +12,8 @@
 
 #include "HrtHelper.hpp"
 
+using namespace time_literals;
+
 class SensataBms
 {
 public:
@@ -52,7 +54,10 @@ private:
   struct BmsPackData
   {
     // Meta
-    uint32_t heard_frame_bits;
+    uint32_t heard_frame_bits = 0;
+    bool online = false;
+    bool missing_frames = false;
+
 
     // Frame 6
     float min_cell_voltage_v;
@@ -97,10 +102,10 @@ private:
 
   hrt_abstime last_frame_check_time{0};
 
-  static constexpr hrt_abstime FRAME_CHECK_PERIOD{500};
+  static constexpr hrt_abstime FRAME_CHECK_PERIOD{2000_ms};
 
-  static constexpr hrt_abstime BATTERY_MONITOR_PUBLISH_PERIOD = 1000;
-   hrt_abstime last_battery_monitor_publish_time{0};
+  static constexpr hrt_abstime BATTERY_MONITOR_PUBLISH_PERIOD{1000_ms};
+  hrt_abstime last_battery_monitor_publish_time{0};
 
   BmsPackData packs_data[PARALLEL_PACK_COUNT]{};
 

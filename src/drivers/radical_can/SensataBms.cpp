@@ -292,31 +292,39 @@ void SensataBms::PublishBatteryMonitor()
   float soc_accumulator_pct = 0;
   float soh_accumulator_pct = 0;
   float total_current_a = 0;
-  //float avg_soc_pct = 0;
   uint32_t cycle_count_accumulator = 0;
   uint32_t i;
+  bool missing_pack = false;
+  uint32_t online_pack_count = 0;
 
   for (i = 0; i < PARALLEL_PACK_COUNT; i++)
   {
+    if (!packs_data[i].online)
+    {
+      missing_pack = true;
+      continue;
+    }
+
     voltage_accumulator_v += packs_data[i].voltage_v;
     total_current_a += packs_data[i].current_a;
     soc_accumulator_pct += packs_data[i].trimmed_soc_pct;
     soh_accumulator_pct += packs_data[i].soh_pct;
     cycle_count_accumulator += packs_data[i].cycle_count;
+    online_pack_count++;;
   }
 
   battery_status_s battery_status = {};
   battery_status.timestamp = hrt_absolute_time();
-  battery_status.connected = true;
+  battery_status.connected = !missing_pack;
   battery_status.cell_count = CELL_COUNT;
   battery_status.serial_number = 0;
   battery_status.id = 0;
-  battery_status.cycle_count = cycle_count_accumulator / PARALLEL_PACK_COUNT;
-  battery_status.state_of_health = soh_accumulator_pct / static_cast<float>(PARALLEL_PACK_COUNT);
-  battery_status.voltage_v = voltage_accumulator_v / static_cast<float>(PARALLEL_PACK_COUNT);
+  battery_status.cycle_count = cycle_count_accumulator / online_pack_count;
+  battery_status.state_of_health = soh_accumulator_pct / static_cast<float>(online_pack_count);
+  battery_status.voltage_v = voltage_accumulator_v / static_cast<float>(online_pack_count);
   battery_status.current_a = total_current_a;
   battery_status.current_average_a = total_current_a;
-  battery_status.remaining = soc_accumulator_pct / static_cast<float>(PARALLEL_PACK_COUNT);
+  battery_status.remaining = soc_accumulator_pct / static_cast<float>(online_pack_count);
   battery_status.temperature = static_cast<float>(0);
   battery_status.capacity = 0;
   battery_status.voltage_cell_v[0] = 0;
@@ -339,17 +347,34 @@ void SensataBms::Update()
 {
   uint32_t i;
 
-  return;
-
   if (HrtHelper_IsDue(last_frame_check_time, FRAME_CHECK_PERIOD))
   {
     // For each parallel pack check the frames seen mask
     for (i = 0; i < PARALLEL_PACK_COUNT; i++)
     {
-      if (packs_data[i].heard_frame_bits != FRAMES_MASK)
+      if (packs_data[i].heard_frame_bits == 0)
       {
-        PX4_INFO("Unexpected frame heard bits");
+        if (packs_data[i].online)
+        {
+          PX4_INFO("Pack %lu now offline!", i);
+          packs_data[i].online = false;
+        }
       }
+      else if (packs_data[i].heard_frame_bits != FRAMES_MASK)
+      {
+        PX4_INFO("Pack %lu: Unexpected frame heard bits", i);
+      }
+      else
+      {
+        if (!packs_data[i].online)
+        {
+          PX4_INFO("Pack %lu now online!", i);
+          packs_data[i].online = true;
+        }
+      }
+
+      // Reset heard bits
+      packs_data[i].heard_frame_bits = 0;
     }
   }
 

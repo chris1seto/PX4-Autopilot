@@ -86,10 +86,10 @@ void RadicalCan::Run()
     }
   }
 
-  /*if (HrtHelper_IsDue(_last_bms_update_time, BMS_UPDATE_PERIOD_MS))
+  if (HrtHelper_IsDue(_last_bms_update_time, BMS_UPDATE_PERIOD))
   {
-    _bms.Update()
-  }*/
+    _bms.Update();
+  }
 
   ScheduleDelayed(100_ms);
 }
