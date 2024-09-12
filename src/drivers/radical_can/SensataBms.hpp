@@ -58,7 +58,6 @@ private:
     bool online = false;
     bool missing_frames = false;
 
-
     // Frame 6
     float min_cell_voltage_v;
     float max_cell_voltage_v;
