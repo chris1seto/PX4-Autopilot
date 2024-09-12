@@ -1,6 +1,7 @@
 #pragma once
 
 #include <uORB/topics/battery_status.h>
+#include <uORB/topics/sensata_pack_status.h>
 #include <uORB/Publication.hpp>
 
 #include <nuttx/can.h>
@@ -92,6 +93,7 @@ private:
   void UnpackFrame11(BmsPackData* const pack_instance, const uint8_t* data, const uint32_t dlc);
 
   uORB::Publication<battery_status_s> _battery_status_pub{ORB_ID::battery_status};
+  uORB::Publication<sensata_pack_status_s> _sensata_pack_status_pub{ORB_ID::sensata_pack_status};
 
   static constexpr uint32_t BMS_FRAME_ID_BASE{1010};
   static constexpr uint32_t BMS_FRAME_ID_SPACING{10};
@@ -99,16 +101,19 @@ private:
   static constexpr uint32_t PARALLEL_PACK_COUNT{6};
   static constexpr uint32_t CELL_COUNT{4};
 
-  hrt_abstime last_frame_check_time{0};
+  static constexpr hrt_abstime FRAME_CHECK_PERIOD{2_s};
+  hrt_abstime _last_frame_check_time{0};
 
-  static constexpr hrt_abstime FRAME_CHECK_PERIOD{2000_ms};
+  static constexpr hrt_abstime BATTERY_STATUS_PUBLISH_PERIOD{1_s};
+  hrt_abstime _last_battery_status_publish_time{0};
+  
+  static constexpr hrt_abstime PACK_STATUS_PUBLISH_PERIOD{10_s};
+  hrt_abstime _last_pack_status_publish_time{0};
 
-  static constexpr hrt_abstime BATTERY_MONITOR_PUBLISH_PERIOD{1000_ms};
-  hrt_abstime last_battery_monitor_publish_time{0};
+  BmsPackData _packs_data[PARALLEL_PACK_COUNT]{};
 
-  BmsPackData packs_data[PARALLEL_PACK_COUNT]{};
-
-  void PublishBatteryMonitor();
+  void PublishBatteryStatus();
+  void PublishPacksStatus();
 
   static constexpr uint32_t FRAMES_MASK{FRAME_6 | FRAME_7 | FRAME_8 | FRAME_9 | FRAME_10 | FRAME_11};
 };

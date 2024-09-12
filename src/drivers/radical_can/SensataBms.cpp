@@ -71,7 +71,7 @@ bool SensataBms::ProcessFrame(struct can_frame& frame)
     return false;
   }
 
-  pack_instance = &packs_data[pack_index];
+  pack_instance = &_packs_data[pack_index];
 
   switch (frame_index)
   {
@@ -286,7 +286,7 @@ void SensataBms::UnpackFrame11(BmsPackData* const pack_instance, const uint8_t* 
   pack_instance->heard_frame_bits |= FRAME_11;
 }
 
-void SensataBms::PublishBatteryMonitor()
+void SensataBms::PublishBatteryStatus()
 {
   float voltage_accumulator_v = 0;
   float soc_accumulator_pct = 0;
@@ -299,17 +299,17 @@ void SensataBms::PublishBatteryMonitor()
 
   for (i = 0; i < PARALLEL_PACK_COUNT; i++)
   {
-    if (!packs_data[i].online)
+    if (!_packs_data[i].online)
     {
       missing_pack = true;
       continue;
     }
 
-    voltage_accumulator_v += packs_data[i].voltage_v;
-    total_current_a += packs_data[i].current_a;
-    soc_accumulator_pct += packs_data[i].trimmed_soc_pct;
-    soh_accumulator_pct += packs_data[i].soh_pct;
-    cycle_count_accumulator += packs_data[i].cycle_count;
+    voltage_accumulator_v += _packs_data[i].voltage_v;
+    total_current_a += _packs_data[i].current_a;
+    soc_accumulator_pct += _packs_data[i].trimmed_soc_pct;
+    soh_accumulator_pct += _packs_data[i].soh_pct;
+    cycle_count_accumulator += _packs_data[i].cycle_count;
     online_pack_count++;;
   }
 
@@ -343,43 +343,52 @@ void SensataBms::PublishBatteryMonitor()
   _battery_status_pub.publish(battery_status);
 }
 
+void SensataBms::PublishPacksStatus()
+{
+}
+
 void SensataBms::Update()
 {
   uint32_t i;
 
-  if (HrtHelper_IsDue(last_frame_check_time, FRAME_CHECK_PERIOD))
+  if (HrtHelper_IsDue(_last_frame_check_time, FRAME_CHECK_PERIOD))
   {
     // For each parallel pack check the frames seen mask
     for (i = 0; i < PARALLEL_PACK_COUNT; i++)
     {
-      if (packs_data[i].heard_frame_bits == 0)
+      if (_packs_data[i].heard_frame_bits == 0)
       {
-        if (packs_data[i].online)
+        if (_packs_data[i].online)
         {
           PX4_INFO("Pack %lu now offline!", i);
-          packs_data[i].online = false;
+          _packs_data[i].online = false;
         }
       }
-      else if (packs_data[i].heard_frame_bits != FRAMES_MASK)
+      else if (_packs_data[i].heard_frame_bits != FRAMES_MASK)
       {
         PX4_INFO("Pack %lu: Unexpected frame heard bits", i);
       }
       else
       {
-        if (!packs_data[i].online)
+        if (!_packs_data[i].online)
         {
           PX4_INFO("Pack %lu now online!", i);
-          packs_data[i].online = true;
+          _packs_data[i].online = true;
         }
       }
 
       // Reset heard bits
-      packs_data[i].heard_frame_bits = 0;
+      _packs_data[i].heard_frame_bits = 0;
     }
   }
 
-  if (HrtHelper_IsDue(last_battery_monitor_publish_time, BATTERY_MONITOR_PUBLISH_PERIOD))
+  if (HrtHelper_IsDue(_last_battery_status_publish_time, BATTERY_STATUS_PUBLISH_PERIOD))
   {
-    PublishBatteryMonitor();
+    PublishBatteryStatus();
+  }
+
+  if (HrtHelper_IsDue(_last_pack_status_publish_time, PACK_STATUS_PUBLISH_PERIOD))
+  {
+    PublishPacksStatus();
   }
 }
