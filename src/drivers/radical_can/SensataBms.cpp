@@ -38,6 +38,16 @@ static uint8_t Unpack8(const uint8_t** data)
 
 SensataBms::SensataBms()
 {
+  uint32_t i;
+  sensata_pack_status_s initial_sensata_pack_status = {};
+  int new_instance_index;
+
+  for (i = 0; i < PARALLEL_PACK_COUNT; i++)
+  {
+    _pack_data_uorb_pfds[i] = orb_advertise_multi(ORB_ID(sensata_pack_status),
+      &initial_sensata_pack_status,
+      &new_instance_index);
+  }
 }
 
 SensataBms::~SensataBms()
@@ -299,7 +309,7 @@ void SensataBms::PublishBatteryStatus()
 
   for (i = 0; i < PARALLEL_PACK_COUNT; i++)
   {
-    if (!_packs_data[i].online)
+    if (!_packs_data[i].is_online)
     {
       missing_pack = true;
       continue;
@@ -345,6 +355,67 @@ void SensataBms::PublishBatteryStatus()
 
 void SensataBms::PublishPacksStatus()
 {
+  uint32_t i;
+  sensata_pack_status_s sensata_pack_status_message = {};
+
+  for (i = 0; i < PARALLEL_PACK_COUNT; i++)
+  {
+    sensata_pack_status_message.timestamp = hrt_absolute_time();
+    sensata_pack_status_message.index = i;
+    
+    if (_packs_data[i].is_online)
+    {
+      sensata_pack_status_message.is_online = true;
+      sensata_pack_status_message.is_missing_frames = _packs_data[i].is_missing_frames;
+
+      sensata_pack_status_message.min_cell_voltage_v = _packs_data[i].min_cell_voltage_v;
+      sensata_pack_status_message.max_cell_voltage_v = _packs_data[i].max_cell_voltage_v;
+      sensata_pack_status_message.voltage_v = _packs_data[i].voltage_v;
+      sensata_pack_status_message.trimmed_soc_pct = _packs_data[i].trimmed_soc_pct;
+
+      sensata_pack_status_message.soh_pct = _packs_data[i].soh_pct;
+
+      sensata_pack_status_message.resistance_r = _packs_data[i].resistance_r;
+      sensata_pack_status_message.current_a = _packs_data[i].current_a;
+
+      sensata_pack_status_message.pack_temp_sensors_c[0] = _packs_data[i].pack_temp_sensors_c[0];
+      sensata_pack_status_message.cms_temps_c[0] = _packs_data[i].cms_temps_c[0];
+      sensata_pack_status_message.cms_temps_c[1] = _packs_data[i].cms_temps_c[1];
+
+      sensata_pack_status_message.heater_on = _packs_data[i].heater_on;
+      sensata_pack_status_message.balancing_bits = _packs_data[i].balancing_bits;
+
+      sensata_pack_status_message.cycle_count = _packs_data[i].cycle_count;
+      sensata_pack_status_message.config_crc = _packs_data[i].config_crc;
+    }
+    else
+    {
+      sensata_pack_status_message.is_online = false;
+      sensata_pack_status_message.is_missing_frames = true;
+
+      sensata_pack_status_message.min_cell_voltage_v = -1;
+      sensata_pack_status_message.max_cell_voltage_v = -1;
+      sensata_pack_status_message.voltage_v = -1;
+      sensata_pack_status_message.trimmed_soc_pct = -1;
+
+      sensata_pack_status_message.soh_pct = -1;
+
+      sensata_pack_status_message.resistance_r = -1;
+      sensata_pack_status_message.current_a = -1;
+
+      sensata_pack_status_message.pack_temp_sensors_c[0] = -1;
+      sensata_pack_status_message.cms_temps_c[0] = -1;
+      sensata_pack_status_message.cms_temps_c[1] = -1;
+
+      sensata_pack_status_message.heater_on = false;
+      sensata_pack_status_message.balancing_bits = 0;
+
+      sensata_pack_status_message.cycle_count = 0;
+      sensata_pack_status_message.config_crc = 0;
+    }
+
+    orb_publish(ORB_ID(sensata_pack_status), _pack_data_uorb_pfds[i], &sensata_pack_status_message);
+  }
 }
 
 void SensataBms::Update()
@@ -358,10 +429,10 @@ void SensataBms::Update()
     {
       if (_packs_data[i].heard_frame_bits == 0)
       {
-        if (_packs_data[i].online)
+        if (_packs_data[i].is_online)
         {
           PX4_INFO("Pack %lu now offline!", i);
-          _packs_data[i].online = false;
+          _packs_data[i].is_online = false;
         }
       }
       else if (_packs_data[i].heard_frame_bits != FRAMES_MASK)
@@ -370,10 +441,10 @@ void SensataBms::Update()
       }
       else
       {
-        if (!_packs_data[i].online)
+        if (!_packs_data[i].is_online)
         {
           PX4_INFO("Pack %lu now online!", i);
-          _packs_data[i].online = true;
+          _packs_data[i].is_online = true;
         }
       }
 

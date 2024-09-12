@@ -1,7 +1,9 @@
 uint64 timestamp			# time since system start (microseconds)
-bool is_missing_frames
 
 uint8 index
+
+bool is_online
+bool is_missing_frames
 
 # Frame 6
 float32 min_cell_voltage_v

@@ -56,8 +56,8 @@ private:
   {
     // Meta
     uint32_t heard_frame_bits = 0;
-    bool online = false;
-    bool missing_frames = false;
+    bool is_online = false;
+    bool is_missing_frames = false;
 
     // Frame 6
     float min_cell_voltage_v;
@@ -111,6 +111,8 @@ private:
   hrt_abstime _last_pack_status_publish_time{0};
 
   BmsPackData _packs_data[PARALLEL_PACK_COUNT]{};
+  
+  orb_advert_t _pack_data_uorb_pfds[PARALLEL_PACK_COUNT]{};
 
   void PublishBatteryStatus();
   void PublishPacksStatus();
