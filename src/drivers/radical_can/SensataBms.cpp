@@ -238,12 +238,12 @@ void SensataBms::UnpackFrame9(BmsPackData* const pack_instance, const uint8_t* d
 
   pack_instance->heard_frame_bits |= FRAME_9;
 
-  for (i = 0; i < PACK_TEMP_SENSOR_COUNT; i++)
+  for (i = 0; i < PACK_TEMPS_COUNT; i++)
   {
-    pack_instance->pack_temp_sensors_c[i] = static_cast<float>(Unpack8(&parse_ptr));
+    pack_instance->pack_temps_c[i] = static_cast<float>(Unpack8(&parse_ptr));
   }
 
-  for (i = 0; i < CMS_TEMP_SENSOR_COUNT; i++)
+  for (i = 0; i < CMS_TEMPS_COUNT; i++)
   {
     pack_instance->cms_temps_c[i] = static_cast<float>(Unpack8(&parse_ptr));
   }
@@ -257,6 +257,8 @@ void SensataBms::UnpackFrame10(BmsPackData* const pack_instance, const uint8_t* 
     Items
       20001 GPIO_INPUT1 UINT8 1 - Reflects the digital data on the given input.
         1 bit
+      PADDING
+        7 bits
       973 BALANCING_BALANCE_SE TTING_CMU1_CELL_BITM ASK UINT32 1 - Cells being balanced as bitmask (b0 = cell 0, ... b11 = cell 11, b12-b15 = always zero)
         24 bits
   */
@@ -273,6 +275,9 @@ void SensataBms::UnpackFrame10(BmsPackData* const pack_instance, const uint8_t* 
   }
 
   pack_instance->heard_frame_bits |= FRAME_10;
+
+  pack_instance->heater_on = (data[0] & 0x01);
+  pack_instance->balancing_bits = (data[2] << 16) | (data[1] << 8) | data[0];
 }
 
 void SensataBms::UnpackFrame11(BmsPackData* const pack_instance, const uint8_t* data, const uint32_t dlc)
@@ -362,7 +367,7 @@ void SensataBms::PublishPacksStatus()
   {
     sensata_pack_status_message.timestamp = hrt_absolute_time();
     sensata_pack_status_message.index = i;
-    
+
     if (_packs_data[i].is_online)
     {
       sensata_pack_status_message.is_online = true;
@@ -378,7 +383,7 @@ void SensataBms::PublishPacksStatus()
       sensata_pack_status_message.resistance_r = _packs_data[i].resistance_r;
       sensata_pack_status_message.current_a = _packs_data[i].current_a;
 
-      sensata_pack_status_message.pack_temp_sensors_c[0] = _packs_data[i].pack_temp_sensors_c[0];
+      sensata_pack_status_message.pack_temps_c[0] = _packs_data[i].pack_temps_c[0];
       sensata_pack_status_message.cms_temps_c[0] = _packs_data[i].cms_temps_c[0];
       sensata_pack_status_message.cms_temps_c[1] = _packs_data[i].cms_temps_c[1];
 
@@ -403,7 +408,7 @@ void SensataBms::PublishPacksStatus()
       sensata_pack_status_message.resistance_r = -1;
       sensata_pack_status_message.current_a = -1;
 
-      sensata_pack_status_message.pack_temp_sensors_c[0] = -1;
+      sensata_pack_status_message.pack_temps_c[0] = -1;
       sensata_pack_status_message.cms_temps_c[0] = -1;
       sensata_pack_status_message.cms_temps_c[1] = -1;
 

@@ -19,7 +19,7 @@ float32 resistance_r
 float32 current_a
 
 # Frame 9
-float32[1] pack_temp_sensors_c
+float32[1] pack_temps_c
 float32[2] cms_temps_c
 
 # Frame 10

@@ -49,8 +49,8 @@ private:
     FRAME_20 = 1 << 19
   };
 
-  static constexpr uint32_t PACK_TEMP_SENSOR_COUNT{6};
-  static constexpr uint32_t CMS_TEMP_SENSOR_COUNT{2};
+  static constexpr uint32_t PACK_TEMPS_COUNT{6};
+  static constexpr uint32_t CMS_TEMPS_COUNT{2};
 
   struct BmsPackData
   {
@@ -73,8 +73,8 @@ private:
     float current_a;
 
     // Frame 9
-    float pack_temp_sensors_c[PACK_TEMP_SENSOR_COUNT];
-    float cms_temps_c[CMS_TEMP_SENSOR_COUNT];
+    float pack_temps_c[PACK_TEMPS_COUNT];
+    float cms_temps_c[CMS_TEMPS_COUNT];
 
     // Frame 10
     bool heater_on;
