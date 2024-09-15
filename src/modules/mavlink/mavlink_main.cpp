@@ -1395,7 +1395,6 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 
 	const float unlimited_rate = -1.0f;
 
-configure_stream_local("SENSATA_PACK_STATUS", 10.0f);
 	switch (_mode) {
 	case MAVLINK_MODE_NORMAL:
 		configure_stream_local("ADSB_VEHICLE", unlimited_rate);
@@ -1530,6 +1529,7 @@ configure_stream_local("SENSATA_PACK_STATUS", 10.0f);
 #endif // MAVLINK_MSG_ID_FUEL_STATUS
 #endif // !CONSTRAINED_FLASH
 
+    configure_stream_local("SENSATA_PACK_STATUS", 1.0f);
 		break;
 
 	case MAVLINK_MODE_GIMBAL:
@@ -1700,7 +1700,6 @@ configure_stream_local("SENSATA_PACK_STATUS", 10.0f);
 		configure_stream_local("FUEL_STATUS", 2.0f);
 #endif // MAVLINK_MSG_ID_FUEL_STATUS
 #endif // !CONSTRAINED_FLASH
-
 		break;
 
 	case MAVLINK_MODE_IRIDIUM:
