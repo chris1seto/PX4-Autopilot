@@ -368,53 +368,40 @@ void SensataBms::PublishPacksStatus()
     sensata_pack_status_message.timestamp = hrt_absolute_time();
     sensata_pack_status_message.index = i;
 
+    sensata_pack_status_message.flag_bits = 0;
+
     if (_packs_data[i].is_online)
     {
-      sensata_pack_status_message.is_online = true;
-      sensata_pack_status_message.is_missing_frames = _packs_data[i].is_missing_frames;
-
+      sensata_pack_status_message.flag_bits |= sensata_pack_status_message.PACK_STATUS_FLAG_BIT_IS_ONLINE;
+      sensata_pack_status_message.flag_bits |= (_packs_data[i].is_missing_frames) ? sensata_pack_status_message.PACK_STATUS_FLAG_BIT_IS_MISSING_FRAMES : 0;
+      sensata_pack_status_message.flag_bits |= (_packs_data[i].heater_on) ? sensata_pack_status_message.PACK_STATUS_FLAG_BIT_HEATER_ON : 0;
       sensata_pack_status_message.min_cell_voltage_v = _packs_data[i].min_cell_voltage_v;
       sensata_pack_status_message.max_cell_voltage_v = _packs_data[i].max_cell_voltage_v;
       sensata_pack_status_message.voltage_v = _packs_data[i].voltage_v;
       sensata_pack_status_message.trimmed_soc_pct = _packs_data[i].trimmed_soc_pct;
-
       sensata_pack_status_message.soh_pct = _packs_data[i].soh_pct;
-
       sensata_pack_status_message.resistance_r = _packs_data[i].resistance_r;
       sensata_pack_status_message.current_a = _packs_data[i].current_a;
-
       sensata_pack_status_message.pack_temps_c[0] = _packs_data[i].pack_temps_c[0];
       sensata_pack_status_message.cms_temps_c[0] = _packs_data[i].cms_temps_c[0];
       sensata_pack_status_message.cms_temps_c[1] = _packs_data[i].cms_temps_c[1];
-
-      sensata_pack_status_message.heater_on = _packs_data[i].heater_on;
       sensata_pack_status_message.balancing_bits = _packs_data[i].balancing_bits;
-
       sensata_pack_status_message.cycle_count = _packs_data[i].cycle_count;
       sensata_pack_status_message.config_crc = _packs_data[i].config_crc;
     }
     else
     {
-      sensata_pack_status_message.is_online = false;
-      sensata_pack_status_message.is_missing_frames = true;
-
       sensata_pack_status_message.min_cell_voltage_v = -1;
       sensata_pack_status_message.max_cell_voltage_v = -1;
       sensata_pack_status_message.voltage_v = -1;
       sensata_pack_status_message.trimmed_soc_pct = -1;
-
       sensata_pack_status_message.soh_pct = -1;
-
       sensata_pack_status_message.resistance_r = -1;
       sensata_pack_status_message.current_a = -1;
-
       sensata_pack_status_message.pack_temps_c[0] = -1;
       sensata_pack_status_message.cms_temps_c[0] = -1;
       sensata_pack_status_message.cms_temps_c[1] = -1;
-
-      sensata_pack_status_message.heater_on = false;
       sensata_pack_status_message.balancing_bits = 0;
-
       sensata_pack_status_message.cycle_count = 0;
       sensata_pack_status_message.config_crc = 0;
     }

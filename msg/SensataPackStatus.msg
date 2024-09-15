@@ -1,9 +1,13 @@
 uint64 timestamp			# time since system start (microseconds)
 
+uint32 MAX_INSTANCES = 6
 uint8 index
 
-bool is_online
-bool is_missing_frames
+uint32 PACK_STATUS_FLAG_BIT_IS_ONLINE = 1
+uint32 PACK_STATUS_FLAG_BIT_IS_MISSING_FRAMES = 2
+uint32 PACK_STATUS_FLAG_BIT_HEATER_ON = 4
+
+uint8 flag_bits
 
 # Frame 6
 float32 min_cell_voltage_v
@@ -23,7 +27,6 @@ float32[1] pack_temps_c
 float32[2] cms_temps_c
 
 # Frame 10
-bool heater_on
 uint32 balancing_bits
 
 # Frame 11

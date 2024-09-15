@@ -155,6 +155,8 @@
 # include "streams/UAVIONIX_ADSB_OUT_DYNAMIC.hpp"
 #endif // !CONSTRAINED_FLASH
 
+#include "streams/SENSATA_PACK_STATUS.hpp"
+
 // ensure PX4 rotation enum and MAV_SENSOR_ROTATION align
 static_assert(MAV_SENSOR_ROTATION_NONE == static_cast<MAV_SENSOR_ORIENTATION>(ROTATION_NONE),
 	      "Roll: 0, Pitch: 0, Yaw: 0");
@@ -511,6 +513,10 @@ static const StreamListItem streams_list[] = {
 #if defined(CURRENT_MODE_HPP)
 	create_stream_list_item<MavlinkStreamCurrentMode>(),
 #endif // CURRENT_MODE_HPP
+
+#if defined(SENSATA_PACK_STATUS_HPP)
+	create_stream_list_item<MavlinkStreamSensataPackStatus>(),
+#endif // SENSATA_PACK_STATUS_HPP
 };
 
 const char *get_stream_name(const uint16_t msg_id)
