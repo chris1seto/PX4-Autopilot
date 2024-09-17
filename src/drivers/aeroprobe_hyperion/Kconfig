@@ -1,0 +1,5 @@
+menuconfig DRIVERS_AEROPROBE_HYPERION
+	bool "aeroprobe_hyperion"
+	default y
+	---help---
+		Enable support for aeroprobe_hyperion
