@@ -5,7 +5,7 @@
 class AeroprobeHyperionParser
 {
 public:
-  enum FrameType
+  enum AeroprobeMessageType
   {
     AirData
   };
@@ -16,7 +16,7 @@ public:
 
   struct AeroprobeMessage
   {
-    FrameType frame_type;
+    AeroprobeMessageType type;
     union
     {
       AeroprobeAirData air_data;

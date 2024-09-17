@@ -48,7 +48,7 @@ private:
   static constexpr uint32_t AEROPROBE_HYPERION_BAUDRATE{115200};
   
   static constexpr uint32_t SERIAL_READ_BUFFER_SIZE{100};
-  uint8_t serial_read_buffer_[SERIAL_READ_BUFFER_SIZE];
+  uint8_t _serial_read_buffer[SERIAL_READ_BUFFER_SIZE]{};
 
 	void Run() override;
 
@@ -56,6 +56,6 @@ private:
   
   AeroprobeHyperionParser _parser{};
   
-  AeroprobeMessage _new_aeroprobe_message{};
+  AeroprobeHyperionParser::AeroprobeMessage _new_aeroprobe_message{};
 
 };

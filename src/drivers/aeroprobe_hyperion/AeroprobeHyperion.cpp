@@ -5,7 +5,7 @@ extern orb_advert_t mavlink_log_pub;
 AeroprobeHyperion::AeroprobeHyperion()
 :
 	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::lp_default),
-  parser_()
+  _parser()
 {
 }
 
@@ -74,21 +74,21 @@ void AeroprobeHyperion::Run()
 	}
 
   uint32_t free_parse_size = _parser.FreeParseBufferSize();
-  
+
   if (free_parse_size > SERIAL_READ_BUFFER_SIZE)
   {
     free_parse_size = SERIAL_READ_BUFFER_SIZE;
   }
 
 	// Read all available data from the serial RC input UART
-	int new_bytes = _uart->readAtLeast(&serial_read_buffer_[0], free_parse_size, 1, 100);
-  
+	int new_bytes = _uart->readAtLeast(&_serial_read_buffer[0], free_parse_size, 1, 100);
+
   if (new_bytes > 0)
   {
-    _parser.LoadData(&serial_read_buffer_, new_bytes);
+    _parser.LoadData(_serial_read_buffer, new_bytes);
   }
-  
-  if (_parser.Parse(&_new_aeroprobe_message))
+
+  if (_parser.Parse(_new_aeroprobe_message))
   {
   }
 

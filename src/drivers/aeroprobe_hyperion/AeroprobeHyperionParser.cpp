@@ -1,9 +1,8 @@
 #include "AeroprobeHyperionParser.hpp"
 
-
 AeroprobeHyperionParser::AeroprobeHyperionParser()
 {
-  QueueBuffer_Init(_parse_queuebuffer, parse_buffer_, PARSE_BUFFER_SIZE);
+  QueueBuffer_Init(&_parse_queuebuffer, _parse_buffer, PARSE_BUFFER_SIZE);
 }
 
 AeroprobeHyperionParser::~AeroprobeHyperionParser()
@@ -50,6 +49,18 @@ bool AeroprobeHyperionParser::Parse(AeroprobeMessage& message_out)
         break;
 
       case Header2:
+        break;
+
+      case PacketId:
+        break;
+
+      case PacketLength:
+        break;
+
+      case Payload:
+        break;
+
+      case Checksum:
         break;
     }
   }
